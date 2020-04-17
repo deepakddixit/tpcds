@@ -246,4 +246,8 @@ public class Date
     {
         return month;
     }
+
+    public java.sql.Date getAsSqlDate(){
+        return new java.sql.Date(getYear(), getMonth(), getDay());
+    }
 }

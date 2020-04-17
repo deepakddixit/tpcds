@@ -14,9 +14,13 @@
 
 package io.prestosql.tpcds.row;
 
+import java.util.Collections;
 import java.util.List;
 
 public interface TableRow
 {
     List<String> getValues();
+    default List<Object> getValuesAsObject(){
+        return Collections.emptyList();
+    }
 }

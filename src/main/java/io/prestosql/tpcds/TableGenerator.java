@@ -14,6 +14,10 @@
 
 package io.prestosql.tpcds;
 
+import static io.prestosql.tpcds.Results.constructResults;
+import static java.lang.String.format;
+import static java.util.Objects.requireNonNull;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -23,105 +27,110 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static io.prestosql.tpcds.Results.constructResults;
-import static java.lang.String.format;
-import static java.util.Objects.requireNonNull;
+public class TableGenerator {
+  private final Session session;
 
-public class TableGenerator
-{
-    private final Session session;
+  public TableGenerator(Session session) {
+    this.session = requireNonNull(session, "session is null");
+  }
 
-    public TableGenerator(Session session)
-    {
-        this.session = requireNonNull(session, "session is null");
+  public void generateTable(Table table) {
+    // If this is a child table and not the only table being generated, it will be generated when its parent is generated, so move on.
+    if (table.isChild() && !session.generateOnlyOneTable()) {
+      return;
     }
 
-    public void generateTable(Table table)
-    {
-        // If this is a child table and not the only table being generated, it will be generated when its parent is generated, so move on.
-        if (table.isChild() && !session.generateOnlyOneTable()) {
-            return;
+    try (OutputStreamWriter parentWriter = addFileWriterForTable(table);
+         OutputStreamWriter childWriter = table.hasChild() && !session.generateOnlyOneTable()
+             ? addFileWriterForTable(table.getChild()) : null) {
+      Results results = constructResults(table, session);
+      for (List<List<String>> parentAndChildRows : results) {
+        if (parentAndChildRows.size() > 0) {
+          writeResults(parentWriter, parentAndChildRows.get(0));
         }
+        if (parentAndChildRows.size() > 1) {
+          requireNonNull(childWriter, "childWriter is null, but a child row was produced");
+          writeResults(childWriter, parentAndChildRows.get(1));
+        }
+      }
+    } catch (IOException e) {
+      throw new TpcdsException(e.getMessage());
+    }
+  }
 
-        try (OutputStreamWriter parentWriter = addFileWriterForTable(table);
-                OutputStreamWriter childWriter = table.hasChild() && !session.generateOnlyOneTable() ? addFileWriterForTable(table.getChild()) : null) {
-            Results results = constructResults(table, session);
-            for (List<List<String>> parentAndChildRows : results) {
-                if (parentAndChildRows.size() > 0) {
-                    writeResults(parentWriter, parentAndChildRows.get(0));
-                }
-                if (parentAndChildRows.size() > 1) {
-                    requireNonNull(childWriter, "childWriter is null, but a child row was produced");
-                    writeResults(childWriter, parentAndChildRows.get(1));
-                }
-            }
-        }
-        catch (IOException e) {
-            throw new TpcdsException(e.getMessage());
-        }
+  public SparkResultIterable generateTableAsItr(Table table) {
+    // If this is a child table and not the only table being generated, it will be generated when its parent is generated, so move on.
+    if (table.isChild() && !session.generateOnlyOneTable()) {
+      return null;
     }
 
-    private OutputStreamWriter addFileWriterForTable(Table table)
-            throws IOException
-    {
-        String path = getPath(table);
-        File file = new File(path);
-        boolean newFileCreated = file.createNewFile();
-        if (!newFileCreated) {
-            if (session.shouldOverwrite()) {
-                // truncate the file
-                new FileOutputStream(path).close();
-            }
-            else {
-                throw new TpcdsException(format("File %s exists.  Remove it or run with the '--overwrite' option", path));
-            }
-        }
+    try {
+      SparkResults results = SparkResults.constructResults(table, session);
+      return new SparkResultIterable(results);
+    } catch (Throwable e) {
+      throw new TpcdsException(e.getMessage());
+    }
+  }
 
-        return new OutputStreamWriter(new FileOutputStream(path, true), StandardCharsets.ISO_8859_1);
+  private OutputStreamWriter addFileWriterForTable(Table table)
+      throws IOException {
+    String path = getPath(table);
+    File file = new File(path);
+    boolean newFileCreated = file.createNewFile();
+    if (!newFileCreated) {
+      if (session.shouldOverwrite()) {
+        // truncate the file
+        new FileOutputStream(path).close();
+      } else {
+        throw new TpcdsException(
+            format("File %s exists.  Remove it or run with the '--overwrite' option", path));
+      }
     }
 
-    private String getPath(Table table)
-    {
-        if (session.getParallelism() > 1) {
-            return format("%s%s%s_%d_%d%s",
-                    session.getTargetDirectory(),
-                    File.separator,
-                    table.getName(),
-                    session.getChunkNumber(),
-                    session.getParallelism(),
-                    session.getSuffix());
-        }
+    return new OutputStreamWriter(new FileOutputStream(path, true), StandardCharsets.ISO_8859_1);
+  }
 
-        // TODO: path names for update case
-        return format("%s%s%s%s",
-                session.getTargetDirectory(),
-                File.separator,
-                table.getName(),
-                session.getSuffix());
+  private String getPath(Table table) {
+    if (session.getParallelism() > 1) {
+      return format("%s%s%s_%d_%d%s",
+          session.getTargetDirectory(),
+          File.separator,
+          table.getName(),
+          session.getChunkNumber(),
+          session.getParallelism(),
+          session.getSuffix());
     }
 
-    private void writeResults(Writer writer, List<String> values)
-            throws IOException
-    {
-        writer.write(formatRow(values, session));
-    }
+    // TODO: path names for update case
+    return format("%s%s%s%s",
+        session.getTargetDirectory(),
+        File.separator,
+        table.getName(),
+        session.getSuffix());
+  }
 
-    public static String formatRow(List<String> values, Session session)
-    {
-        // replace nulls with the string representation for null
-        values = values.stream().map(value -> value != null ? value : session.getNullString()).collect(Collectors.toList());
+  private void writeResults(Writer writer, List<String> values)
+      throws IOException {
+    writer.write(formatRow(values, session));
+  }
 
-        StringBuilder stringBuilder = new StringBuilder();
-        char separator = session.getSeparator();
-        stringBuilder.append(values.get(0));
-        for (int i = 1; i < values.size(); i++) {
-            stringBuilder.append(separator);
-            stringBuilder.append(values.get(i));
-        }
-        if (session.terminateRowsWithSeparator()) {
-            stringBuilder.append(separator);
-        }
-        stringBuilder.append('\n');
-        return stringBuilder.toString();
+  public static String formatRow(List<String> values, Session session) {
+    // replace nulls with the string representation for null
+    values =
+        values.stream().map(value -> value != null ? value : session.getNullString())
+            .collect(Collectors.toList());
+
+    StringBuilder stringBuilder = new StringBuilder();
+    char separator = session.getSeparator();
+    stringBuilder.append(values.get(0));
+    for (int i = 1; i < values.size(); i++) {
+      stringBuilder.append(separator);
+      stringBuilder.append(values.get(i));
     }
+    if (session.terminateRowsWithSeparator()) {
+      stringBuilder.append(separator);
+    }
+    stringBuilder.append('\n');
+    return stringBuilder.toString();
+  }
 }

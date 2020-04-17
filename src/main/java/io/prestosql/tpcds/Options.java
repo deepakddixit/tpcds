@@ -109,4 +109,84 @@ public class Options
             throw new InvalidOptionException("parallelism", Integer.toString(parallelism), "Parallelism must be >= 1");
         }
     }
+
+    public double getScale() {
+        return scale;
+    }
+
+    public void setScale(double scale) {
+        this.scale = scale;
+    }
+
+    public String getDirectory() {
+        return directory;
+    }
+
+    public void setDirectory(String directory) {
+        this.directory = directory;
+    }
+
+    public String getSuffix() {
+        return suffix;
+    }
+
+    public void setSuffix(String suffix) {
+        this.suffix = suffix;
+    }
+
+    public String getTable() {
+        return table;
+    }
+
+    public void setTable(String table) {
+        this.table = table;
+    }
+
+    public String getNullString() {
+        return nullString;
+    }
+
+    public void setNullString(String nullString) {
+        this.nullString = nullString;
+    }
+
+    public char getSeparator() {
+        return separator;
+    }
+
+    public void setSeparator(char separator) {
+        this.separator = separator;
+    }
+
+    public boolean isDoNotTerminate() {
+        return doNotTerminate;
+    }
+
+    public void setDoNotTerminate(boolean doNotTerminate) {
+        this.doNotTerminate = doNotTerminate;
+    }
+
+    public boolean isNoSexism() {
+        return noSexism;
+    }
+
+    public void setNoSexism(boolean noSexism) {
+        this.noSexism = noSexism;
+    }
+
+    public int getParallelism() {
+        return parallelism;
+    }
+
+    public void setParallelism(int parallelism) {
+        this.parallelism = parallelism;
+    }
+
+    public boolean isOverwrite() {
+        return overwrite;
+    }
+
+    public void setOverwrite(boolean overwrite) {
+        this.overwrite = overwrite;
+    }
 }

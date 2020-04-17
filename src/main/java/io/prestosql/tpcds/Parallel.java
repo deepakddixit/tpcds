@@ -26,7 +26,8 @@ public final class Parallel
         // Tables with fewer than 1000000 are not parallelized. Return no rows for chunks > 1
         long totalRows = session.getScaling().getRowCount(table);
         int chunk = session.getChunkNumber();
-        if (totalRows < 1000000) {
+        // TODO : Make it parallel based on session
+        if (totalRows < 1000) {
             if (chunk > 1) {
                 return new ChunkBoundaries(1, 0);
             }

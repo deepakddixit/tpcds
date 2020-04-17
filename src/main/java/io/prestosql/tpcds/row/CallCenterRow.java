@@ -274,6 +274,42 @@ public class CallCenterRow
                 getStringOrNull(ccTaxPercentage, CC_TAX_PERCENTAGE));
     }
 
+    @Override
+    public List<Object> getValuesAsObject()
+    {
+        return newArrayList(getStringOrNullForKeyObj(ccCallCenterSk, CC_CALL_CENTER_SK),
+            getStringOrNullObj(ccCallCenterId, CC_CALL_CENTER_ID),
+            getDateStringOrNullFromJulianDaysAsSqlDate(ccRecStartDateId, CC_REC_START_DATE_ID),
+            getDateStringOrNullFromJulianDaysAsSqlDate(ccRecEndDateId, CC_REC_END_DATE_ID),
+            getStringOrNullForKeyObj(ccClosedDateId, CC_CLOSED_DATE_ID),
+            getStringOrNullForKeyObj(ccOpenDateId, CC_OPEN_DATE_ID),
+            getStringOrNullObj(ccName, CC_NAME),
+            getStringOrNullObj(ccClass, CC_CLASS),
+            getStringOrNullObj(ccEmployees, CC_EMPLOYEES),
+            getStringOrNullObj(ccSqFt, CC_SQ_FT),
+            getStringOrNullObj(ccHours, CC_HOURS),
+            getStringOrNullObj(ccManager, CC_MANAGER),
+            getStringOrNullObj(ccMarketId, CC_MARKET_ID),
+            getStringOrNullObj(ccMarketClass, CC_MARKET_CLASS),
+            getStringOrNullObj(ccMarketDesc, CC_MARKET_DESC),
+            getStringOrNullObj(ccMarketManager, CC_MARKET_MANAGER),
+            getStringOrNullObj(ccDivisionId, CC_DIVISION),
+            getStringOrNullObj(ccDivisionName, CC_DIVISION_NAME),
+            getStringOrNullObj(ccCompany, CC_COMPANY),
+            getStringOrNullObj(ccCompanyName, CC_COMPANY_NAME),
+            getStringOrNullObj(ccAddress.getStreetNumber(), CC_STREET_NUMBER),
+            getStringOrNullObj(ccAddress.getStreetName(), CC_STREET_NAME),
+            getStringOrNullObj(ccAddress.getStreetType(), CC_STREET_TYPE),
+            getStringOrNullObj(ccAddress.getSuiteNumber(), CC_SUITE_NUMBER),
+            getStringOrNullObj(ccAddress.getCity(), CC_CITY),
+            getStringOrNullObj(ccAddress.getCounty(), CC_ADDRESS),
+            getStringOrNullObj(ccAddress.getState(), CC_STATE),
+            getStringOrNullObj(format("%05d", ccAddress.getZip()), CC_ZIP),
+            getStringOrNullObj(ccAddress.getCountry(), CC_COUNTRY),
+            getStringOrNullObj(ccAddress.getGmtOffset(), CC_GMT_OFFSET),
+            getStringOrNullObj(ccTaxPercentage, CC_TAX_PERCENTAGE));
+    }
+
     public static class Builder
     {
         private long ccCallCenterSk;
